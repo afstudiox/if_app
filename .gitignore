@@ -1,0 +1,26 @@
+# Node
+backend/node_modules/
+backend/package-lock.json
+
+# Logs
+*.log
+
+# Docker
+**/.docker/
+**/Dockerfile~
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Vscode configs (se usar)
+.vscode/
+*.code-workspace
+
+# Linux swap/temp
+*.swp
+*.swo
+*~
+
+# Outros
+.env
