@@ -1,10 +1,39 @@
+# docker-compose.yml
 version: '3.8'
 
 services:
   backend:
     build: ./backend
     ports:
-      - "3000:3000"
-    volumes: 
+      - '3000:3000'
+    volumes:
       - ./backend:/app
-    command: node src/index.js
+    command: npm run dev
+    env_file:
+      - ./backend/.env
+    depends_on: # Adicione isso
+      db:
+        condition: service_healthy # Adicione isso
+
+  db:
+    image: mysql:8.0
+    container_name: mysql_if_app
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: if_app
+      MYSQL_USER: appuser
+      MYSQL_PASSWORD: pass123
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck: # Adicione isso
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "appuser", "-ppass123"]
+      interval: 5s
+      timeout: 10s
+      retries: 5
+      start_period: 30s # Dê mais tempo para o DB iniciar antes de começar a checar
+
+volumes:
+  db_data:
