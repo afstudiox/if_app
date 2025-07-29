@@ -1,26 +1,34 @@
 // backend/src/index.js
-require('dotenv').config(); // Garante que as variáveis de ambiente sejam carregadas primeiro
+require('dotenv').config();
 
-console.log('Variável de Ambiente DB_HOST:', process.env.DB_HOST); // Mantenha para verificação
+// Importe o PrismaClient que será gerado com o schema.prisma
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
+
+console.log('Variável de Ambiente DATABASE_URL:', process.env.DATABASE_URL); // Agora vai logar a URL completa
 
 const express = require('express');
-const db = require('./db'); // Importa o pool de conexões do seu db.js
-
 const app = express();
-const port = process.env.PORT || 3000; // Define a porta, pode adicionar no .env se quiser
+const port = process.env.PORT || 3000;
 
-// Middleware para JSON (se for uma API REST)
 app.use(express.json());
 
-// Exemplo de rota usando o pool de conexões
-// Esta rota vai usar o pool que você configurou em db.js
-app.get('/test-db', async (req, res) => {
+// Teste de conexão do Prisma ao iniciar o servidor
+prisma.$connect()
+  .then(() => console.log('🟢 Prisma conectado ao MySQL com sucesso!'))
+  .catch((err) => {
+    console.error('🔴 Erro ao conectar o Prisma ao MySQL:', err.message);
+    process.exit(1);
+  });
+
+// Exemplo de rota usando o Prisma
+app.get('/users', async (req, res) => {
   try {
-    const [rows] = await db.query('SELECT 1 + 1 AS solution');
-    res.json({ message: 'Conexão com o banco de dados bem-sucedida!', solution: rows[0].solution });
+    const users = await prisma.user.findMany();
+    res.json(users);
   } catch (err) {
-    console.error('Erro na rota /test-db:', err);
-    res.status(500).json({ error: 'Erro ao consultar o banco de dados.' });
+    console.error('Erro ao buscar usuários:', err);
+    res.status(500).json({ error: 'Erro ao buscar usuários.' });
   }
 });
 
