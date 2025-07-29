@@ -1,11 +1,12 @@
 # Node
 backend/node_modules/
-backend/package-lock.json
+backend/dist/ # Adicionado: Ignora o diretório de saída do TypeScript
 
 # Logs
 *.log
+npm-debug.log* # Adicionado: logs de debug específicos do npm
 
-# Docker
+# Docker (já que você removeu, esta seção é mais uma formalidade)
 **/.docker/
 **/Dockerfile~
 
@@ -14,7 +15,8 @@ backend/package-lock.json
 Thumbs.db
 
 # Vscode configs (se usar)
-.vscode/
+# .vscode/ # Geralmente bom ignorar settings.json, mas considere commitar launch.json e extensions.json
+.vscode/settings.json # Sugestão: ignore apenas settings.json se quiser compartilhar outras configs
 *.code-workspace
 
 # Linux swap/temp
