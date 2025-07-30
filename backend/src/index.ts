@@ -1,41 +1,51 @@
 // backend/src/index.ts
-import 'dotenv/config'; // Importa e carrega as variáveis de ambiente
-import express, { Request, Response } from 'express'; // Importa express e os tipos Request/Response
-import { PrismaClient } from '@prisma/client';
+// Ponto de entrada principal da aplicação.
+// Responsável por carregar variáveis de ambiente, conectar ao DB e iniciar o servidor.
 
-const app = express();
-const prisma = new PrismaClient();
-const port = process.env.PORT || 3000; // Usa a variável de ambiente PORT do .env
+import 'dotenv/config'; // Importa e carrega as variáveis de ambiente do .env para process.env
+// Por que existe: Garante que as configurações estejam disponíveis desde o início.
 
-// Middlewares
-app.use(express.json()); // Habilita o Express a lidar com JSON no corpo das requisições
+import app from './interfaces/app'; // Importa a instância do aplicativo Express configurada em app.ts
+// Por que existe: Desacopla a inicialização do servidor da sua configuração de rotas e middlewares.
 
-// Conexão com o Prisma
-async function connectPrisma() {
+import { PrismaClient } from '@prisma/client'; // Importa a classe PrismaClient para interação com o DB
+// Por que existe: É o ORM que conecta sua aplicação ao banco de dados MySQL.
+
+const prisma = new PrismaClient(); // Cria uma nova instância do PrismaClient
+// Por que existe: Essa instância será usada para todas as operações de banco de dados.
+
+const port = process.env.PORT || 3000; // Define a porta do servidor, usando .env ou 3000 como fallback
+// Por que existe: Permite flexibilidade na configuração da porta.
+
+/**
+ * @function connectPrisma
+ * @description Tenta conectar o Prisma ao banco de dados MySQL.
+ * @returns {Promise<void>} Uma promessa que resolve se a conexão for bem-sucedida, ou rejeita em caso de erro.
+ */
+async function connectPrisma(): Promise<void> {
     try {
-        await prisma.$connect();
-        console.log('🟢 Prisma conectado ao MySQL com sucesso!');
-    } catch (error: any) { // Usamos 'any' aqui para simplificar a tipagem do erro por enquanto
-        console.error('🔴 Erro ao conectar o Prisma ao MySQL:', error.message);
-        // Opcional: Você pode querer encerrar o processo se a conexão com o DB falhar
-        // process.exit(1);
+        await prisma.$connect(); // Tenta estabelecer a conexão com o DB
+        console.log('🟢 Prisma conectado ao MySQL com sucesso!'); // Feedback de sucesso
+    } catch (error: any) {
+        console.error('🔴 Erro ao conectar o Prisma ao MySQL:', error.message); // Loga o erro detalhado
+        process.exit(1); // Encerra a aplicação se a conexão crítica falhar
     }
 }
 
-// Rota para listar usuários
-app.get('/users', async (req: Request, res: Response) => {
-    try {
-        const users = await prisma.user.findMany();
-        return res.json(users);
-    } catch (error: any) {
-        console.error('Erro ao buscar usuários:', error);
-        return res.status(500).json({ error: 'Erro interno do servidor ao buscar usuários.' });
-    }
-});
+/**
+ * @function startServer
+ * @description Inicia o processo do servidor: conecta ao DB e então inicia o Express.
+ * @returns {Promise<void>} Uma promessa que resolve quando o servidor Express está escutando.
+ */
+async function startServer(): Promise<void> {
+    await connectPrisma(); // Garante que o DB esteja conectado antes de iniciar o servidor
 
-// Iniciar o servidor
-app.listen(port, () => {
-    console.log(`Variável de Ambiente DATABASE_URL: ${process.env.DATABASE_URL}`);
-    console.log(`Servidor rodando na porta ${port}`);
-    connectPrisma(); // Tenta conectar o Prisma ao iniciar o servidor
-});
+    app.listen(port, () => {
+        // Inicia o servidor Express na porta especificada
+        console.log(`Variável de Ambiente DATABASE_URL: ${process.env.DATABASE_URL}`); // Debug da URL do DB
+        console.log(`Servidor rodando na porta ${port}`); // Confirma a porta do servidor
+    });
+}
+
+startServer(); // Chama a função para iniciar toda a aplicação
+// Por que existe: É o ponto de execução principal do script.
