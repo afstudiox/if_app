@@ -15,6 +15,13 @@ import { PrismaUserRepository } from '../infrastructure/PrismaUserRepository'; /
 import { ListUsersUseCase } from '../application/ListUsersUseCase'; // Importa o caso de uso de listar usuários.
 // Por que existe: O controlador delega a lógica de negócio para o caso de uso.
 
+import { CreateUserUseCase } from '../application/CreateUserUseCase'; // Importa o caso de uso de criação.
+// Por que existe: O controlador delega a lógica de negócio de criação para este caso de uso.
+
+import { CreateUserDTO } from './CreateUserDTO'; // Importa o DTO de criação. Note o caminho relativo.
+// Por que existe: Define a tipagem esperada para os dados de entrada na rota de criação.
+
+
 const app = express(); // Cria a instância do aplicativo Express.
 // Por que existe: O objeto principal para configuração do servidor web.
 
@@ -36,6 +43,9 @@ const userRepository = new PrismaUserRepository(prisma); // Instância do reposi
 const listUsersUseCase = new ListUsersUseCase(userRepository); // Instância do caso de uso, injetando o repositório.
 // Por que existe: Orquestra a lógica de negócio para listar usuários.
 
+const createUserUseCase = new CreateUserUseCase(userRepository); // Instância do caso de uso de criação.
+// Por que existe: Prepara o caso de uso para ser invocado pela nova rota POST.
+
 // Rota para listar usuários
 /**
  * @route GET /users
@@ -50,6 +60,38 @@ app.get('/users', async (req: Request, res: Response) => {
     } catch (error: any) {
         console.error('Erro ao buscar usuários na rota /users:', error); // Loga o erro para depuração.
         return res.status(500).json({ error: 'Erro interno do servidor.' }); // Retorna um erro genérico 500.
+    }
+});
+
+// Rota para criar usuários (POST /users)
+/**
+ * @route POST /users
+ * @description Rota para criar um novo usuário.
+ * O que faz: Recebe os dados do usuário do corpo da requisição, delega a criação ao caso de uso
+ * e retorna o usuário criado com um status 201.
+ * Por que existe: É o "ponto de entrada" HTTP para a funcionalidade de criação de usuário,
+ * traduzindo a requisição HTTP para uma chamada ao caso de uso da aplicação.
+ */
+app.post('/users', async (req: Request, res: Response) => {
+    try {
+        // Valida os dados de entrada usando o DTO.
+        // O que faz: Assegura que o corpo da requisição JSON esteja tipado corretamente
+        //                   conforme o que o caso de uso espera (email e name).
+        const userData: CreateUserDTO = req.body;
+
+        // Chama o caso de uso para criar o usuário.
+        // O que faz: Delega a lógica de negócio de criação de usuário para a camada de aplicação.
+        //                   O controlador não sabe como o usuário é salvo, apenas que o caso de uso o cria.
+        const newUser = await createUserUseCase.execute(userData);
+
+        // Retorna o usuário criado com status 201 (Created).
+        // O que faz: Informa ao cliente que o recurso foi criado com sucesso e fornece os detalhes do novo usuário.
+        return res.status(201).json(newUser);
+    } catch (error: any) {
+        console.error('Erro ao criar usuário na rota POST /users:', error);
+        // Em uma aplicação real, você teria tratamentos de erro mais granulares aqui,
+        // como retornar 400 (Bad Request) para erros de validação ou 409 (Conflict) para emails duplicados.
+        return res.status(500).json({ error: 'Erro interno do servidor ao criar usuário.' });
     }
 });
 

@@ -21,10 +21,27 @@ import { User } from '../domain/User';         // Importa a interface User para 
  * (ex: de MySQL para PostgreSQL, ou de Prisma para TypeORM) sem alterar a lógica de negócio.
  */
 export interface UserRepository {
-  findAll(): Promise<User[]>; // Método para buscar todos os usuários. Retorna uma Promise de um array de User.
-  // O que faz: Declara que todo repositório de usuário deve ser capaz de fornecer uma lista de usuários.
-  // Por que existe: Define o comportamento essencial de um repositório de leitura para a entidade User.
-  // Futuramente, outros métodos como findById, create, update, delete seriam adicionados aqui para expandir o CRUD.
+  
+  /**
+   * @method findAll
+   * @description Declara um método para buscar todos os usuários.
+   * @returns {Promise<User[]>} Uma promessa que resolve com um array de objetos User.
+   * O que faz: Define que todo repositório de usuário deve ser capaz de fornecer uma lista de usuários.
+   * Por que existe: Define o comportamento essencial de um repositório de leitura para a entidade User,
+   * permitindo que a camada de aplicação solicite essa operação.
+   */
+  findAll(): Promise<User[]>;
+  // Futuramente, outros métodos como create, findById, update, delete seriam adicionados aqui para expandir o CRUD.
+
+  /**
+   * @method create
+   * @description Declara um método para criar um novo usuário.
+   * @param {Omit<User, 'id'>} user - Um objeto User sem a propriedade 'id', pois ela será gerada pelo banco de dados.
+   * @returns {Promise<User>} Uma promessa que resolve com o usuário criado (que agora terá um ID).
+   * O que faz: Adiciona a capacidade de persistir um novo usuário ao contrato do repositório.
+   * Por que existe: Permite que a camada de 'application' solicite a criação de um usuário sem saber os detalhes de como isso é feito.
+   */
+  create(user: Omit<User, 'id'>): Promise<User>; // 'Omit<User, 'id'>' significa um User sem o 'id'.
 }
 
 /**
@@ -58,6 +75,7 @@ export class PrismaUserRepository implements UserRepository {
    * @method findAll
    * @description Implementação do método 'findAll' da interface UserRepository.
    * O que faz: Busca todos os registros de usuário no banco de dados através do Prisma.
+   * @returns {Promise<User[]>} Uma promessa que resolve com um array de objetos User.
    * Por que existe: É a lógica concreta para satisfazer o contrato `findAll()` definido na interface.
    */
   async findAll(): Promise<User[]> {
@@ -75,5 +93,26 @@ export class PrismaUserRepository implements UserRepository {
       ...user, // Copia todas as outras propriedades do objeto 'user'
       id: user.id.toString(), // Converte explicitamente o ID para string
     }));
+  }
+  /**
+   * @method create
+   * @description Cria um novo usuário no banco de dados usando o Prisma.
+   * @param {Omit<User, 'id'>} user - O objeto usuário a ser criado (sem o ID, que é gerado pelo DB).
+   * @returns {Promise<User>} Uma promessa que resolve com o usuário criado (com o ID gerado).
+   * O que faz: Persiste o novo usuário no banco de dados MySQL através do PrismaClient.
+   * Por que existe: Implementa a funcionalidade de criação definida na interface `UserRepository`,
+   * traduzindo a requisição da camada de aplicação em uma operação de DB real.
+   */
+  async create(user: Omit<User, 'id'>): Promise<User> {
+    // Usa o Prisma para criar o registro no banco de dados.
+    const createdUser = await this.prisma.user.create({
+      data: user, // Os dados a serem inseridos são exatamente os recebidos (email, name).
+    });
+
+    // Mapeia o resultado do Prisma para a interface 'User' do domínio, garantindo o tipo 'id'.
+    return {
+      ...createdUser,
+      id: createdUser.id.toString(), // Garante que o ID retornado seja uma string.
+    };
   }
 }
