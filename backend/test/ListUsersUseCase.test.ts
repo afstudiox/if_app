@@ -23,6 +23,7 @@ describe('ListUsersUseCase', () => {
     userRepositoryMock = {
       findAll: jest.fn(), // O que faz: Cria uma função falsa (mock function) para o método findAll.
       create: jest.fn(),  // Também criamos um mock para o método create, mesmo que não o usemos neste teste.
+      update: jest.fn(), // Agora, o mock também deve ter o método 'update'
     };
 
     // Instanciamos o caso de uso, INJETANDO o nosso mock em vez da implementação real (PrismaUserRepository).

@@ -20,6 +20,7 @@ describe('CreateUserUseCase', () => {
     userRepositoryMock = {
       findAll: jest.fn(), 
       create: jest.fn(),
+      update: jest.fn(), // Agora, o mock também deve ter o método 'update'
     };
 
     // Instanciamos o caso de uso, INJETANDO o nosso mock

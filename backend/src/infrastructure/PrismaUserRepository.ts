@@ -8,7 +8,12 @@ import { PrismaClient } from '@prisma/client'; // Importa o cliente gerado pelo 
 import { User } from '../domain/User';         // Importa a interface User para garantir a tipagem do domínio.
 // O que faz: Define a estrutura esperada para objetos User, conforme as regras de negócio do domínio.
 // Por que existe: Garante que os dados retornados e manipulados pelo repositório estejam em conformidade
-//                   com o modelo de entidade puro, desacoplando o domínio da implementação do DB.
+// com o modelo de entidade puro, desacoplando o domínio da implementação do DB.
+
+import { UpdateUserDTO } from '../interfaces/UpdateUserDTO'; // Importa o DTO de atualização.
+// O que faz: Define a estrutura dos dados que podem ser usados para atualizar um usuário.
+// Por que existe: Garante que a camada de infraestrutura aceite apenas os dados esperados
+// para a operação de atualização, desacoplando o repositório do formato da requisição HTTP.
 
 /**
  * @interface UserRepository
@@ -21,7 +26,6 @@ import { User } from '../domain/User';         // Importa a interface User para 
  * (ex: de MySQL para PostgreSQL, ou de Prisma para TypeORM) sem alterar a lógica de negócio.
  */
 export interface UserRepository {
-  
   /**
    * @method findAll
    * @description Declara um método para buscar todos os usuários.
@@ -31,7 +35,6 @@ export interface UserRepository {
    * permitindo que a camada de aplicação solicite essa operação.
    */
   findAll(): Promise<User[]>;
-  // Futuramente, outros métodos como create, findById, update, delete seriam adicionados aqui para expandir o CRUD.
 
   /**
    * @method create
@@ -42,6 +45,15 @@ export interface UserRepository {
    * Por que existe: Permite que a camada de 'application' solicite a criação de um usuário sem saber os detalhes de como isso é feito.
    */
   create(user: Omit<User, 'id'>): Promise<User>; // 'Omit<User, 'id'>' significa um User sem o 'id'.
+
+  /**
+   * @method update
+   * @description Declara um método para atualizar um usuário existente.
+   * @param {string} id - O ID do usuário a ser atualizado.
+   * @param {UpdateUserDTO} userDetails - Os dados a serem atualizados (email e/ou name).
+   * @returns {Promise<User | null>} Uma promessa que resolve com o usuário atualizado ou `null` se não for encontrado.
+   */
+  update(id: string, userDetails: UpdateUserDTO): Promise<User | null>;
 }
 
 /**
@@ -85,16 +97,16 @@ export class PrismaUserRepository implements UserRepository {
 
     // Mapeia os resultados do Prisma para o formato da interface 'User' do domínio.
     // O que faz: Assegura que o tipo 'id' (e outras propriedades, se houver) esteja
-    //                   exatamente como definido na interface 'User' (ex: 'string'),
-    //                   mesmo que o Prisma o retorne de forma ligeiramente diferente (ex: Buffer).
+    // exatamente como definido na interface 'User' (ex: 'string'),
+    // mesmo que o Prisma o retorne de forma ligeiramente diferente (ex: Buffer).
     // Por que existe: Garante a conformidade de tipos entre a camada de infraestrutura
-    //                   e a camada de domínio, evitando erros de tipagem.
+    // e a camada de domínio, evitando erros de tipagem.
     return users.map(user => ({
       ...user, // Copia todas as outras propriedades do objeto 'user'
       id: user.id.toString(), // Converte explicitamente o ID para string
     }));
   }
-  
+
   /**
    * @method create
    * @description Cria um novo usuário no banco de dados usando o Prisma.
@@ -115,5 +127,47 @@ export class PrismaUserRepository implements UserRepository {
       ...createdUser,
       id: createdUser.id.toString(), // Garante que o ID retornado seja uma string.
     };
+  }
+
+  /**
+   * @method update
+   * @description Implementação do método 'update' da interface UserRepository.
+   * O que faz: Busca e atualiza um usuário no banco de dados com os novos dados fornecidos.
+   * @param {string} id - O ID do usuário a ser atualizado.
+   * @param {UpdateUserDTO} userDetails - Os dados a serem atualizados.
+   * @returns {Promise<User | null>} Uma promessa que resolve com o usuário atualizado ou `null` se não for encontrado.
+   * Por que existe: Implementa a funcionalidade de atualização definida na interface `UserRepository`.
+   * É a lógica concreta para traduzir a requisição de atualização da camada de aplicação em uma operação de DB real.
+   */
+  async update(id: string, userDetails: UpdateUserDTO): Promise<User | null> {
+    try {
+      // Usa o Prisma para buscar e atualizar o registro, retornando o resultado.
+      // A cláusula `where` é usada para encontrar o usuário com o ID fornecido.
+      // A cláusula `data` contém apenas os dados que devem ser atualizados.
+
+      // Converte a string 'id' para um número antes de passar para o Prisma
+      const numericId = parseInt(id); 
+
+
+      const updatedUser = await this.prisma.user.update({
+        where: { id: numericId  },
+        data: userDetails,
+      });
+
+      // Mapeia o resultado do Prisma para a interface 'User' do domínio.
+      return {
+        ...updatedUser,
+        id: updatedUser.id.toString(),
+      };
+    } catch (error: any) {
+      // Se o usuário não for encontrado, o Prisma lança um erro.
+      // Capturamos esse erro e retornamos 'null' para indicar que a atualização falhou.
+      // Em um tratamento de erro mais robusto, você poderia verificar o tipo de erro
+      // para retornar uma resposta mais específica.
+      if (error.code === 'P2025') {
+        return null;
+      }
+      throw error; // Lança outros tipos de erro.
+    }
   }
 }
