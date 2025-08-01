@@ -1,19 +1,22 @@
 // backend/src/application/CreateUserUseCase.ts
 // Define o caso de uso para a criação de um novo usuário.
 
-import { User } from '../domain/User';                 // Importa a interface User para tipagem do domínio.
+import { User } from '../domain/User';                 
+// Importa a interface User para tipagem do domínio.
 // O que faz: O caso de uso opera e retorna entidades do domínio.
 // Por que existe: Garante consistência de tipos, assegurando que o caso de uso manipule objetos User conforme definido no domínio.
 
-import { UserRepository } from '../infrastructure/PrismaUserRepository'; // Importa a INTERFACE do repositório.
+import { UserRepository } from '../infrastructure/PrismaUserRepository'; 
+// Importa a INTERFACE do repositório.
 // O que faz: O caso de uso depende da abstração do repositório para persistir dados.
-// Por que existe: Permite Inversão de Dependência, tornando o caso de uso independente da implementação de DB.
-//                   Ele só se preocupa com "o que" o repositório faz (o contrato), não "como" ele faz.
+// Por que existe: Permite Inversão de Dependência, tornando o caso de uso independente da implementação de DB. 
+// Ele só se preocupa com "o que" o repositório faz (o contrato), não "como" ele faz.
 
-import { CreateUserDTO } from '../interfaces/CreateUserDTO'; // Importa o DTO de entrada.
+import { CreateUserDTO } from '../interfaces/CreateUserDTO'; 
+// Importa o DTO de entrada.
 // O que faz: Define a estrutura dos dados que o caso de uso espera receber para criar um usuário.
 // Por que existe: Desacopla a forma como os dados chegam (ex: JSON de uma requisição HTTP)
-//                   da forma como o domínio os entende ou do que o caso de uso precisa para operar.
+// da forma como o domínio os entende ou do que o caso de uso precisa para operar.
 
 /**
  * @class CreateUserUseCase

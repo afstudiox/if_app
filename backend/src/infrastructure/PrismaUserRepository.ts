@@ -94,6 +94,7 @@ export class PrismaUserRepository implements UserRepository {
       id: user.id.toString(), // Converte explicitamente o ID para string
     }));
   }
+  
   /**
    * @method create
    * @description Cria um novo usuário no banco de dados usando o Prisma.

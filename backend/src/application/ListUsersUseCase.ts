@@ -1,4 +1,3 @@
-// backend/src/application/ListUsersUseCase.ts
 // Define o caso de uso para listar todos os usuários.
 
 import { User } from '../domain/User';                 // Importa a interface User para tipagem do domínio.
